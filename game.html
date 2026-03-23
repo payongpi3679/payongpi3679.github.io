@@ -67,15 +67,15 @@
         <div id="score-display" class="mb-auto" style="display: none;">0</div>
         
         <div id="start-screen" class="flex flex-col items-center">
-            <h1 class="text-2xl mb-12 text-center leading-relaxed">ANGRY<br>FLAPPY</h1>
+            <h1 class="text-2xl mb-12 text-center leading-relaxed">ANGY<br>FLAPPY</h1>
             <button class="pixel-btn" onclick="startGame()">START</button>
             <p class="mt-10 text-[10px] opacity-80">TAP OR SPACE</p>
         </div>
 
         <div id="game-over-screen" class="flex flex-col items-center" style="display: none;">
-            <h2 class="text-xl mb-4">Wasted!</h2>
-            <div id="final-score" class="text-sm mb-10">Score: 0</div>
-            <button class="pixel-btn" onclick="resetGame()">TRY AGAIN</button>
+            <h2 class="text-xl mb-4">WASTED</h2>
+            <div id="final-score" class="text-sm mb-10">SCORE: 0</div>
+            <button class="pixel-btn" onclick="resetGame()">REPLAY</button>
         </div>
     </div>
 
@@ -91,14 +91,14 @@
 
         // Assets
         const birdImg = new Image();
-        birdImg.src = '2321.png'; // Using the newly provided image
+        birdImg.src = 'angy.png'; // Updated to the pixel art version
 
         // Game constants
-        const GRAVITY = 0.3;
-        const JUMP_STRENGTH = -5.5;
-        const PIPE_SPEED = 3;
-        const PIPE_SPAWN_RATE = 90;
-        const PIPE_GAP = 150;
+        const GRAVITY = 0.28;
+        const JUMP_STRENGTH = -5.2;
+        const PIPE_SPEED = 2.8;
+        const PIPE_SPAWN_RATE = 95;
+        const PIPE_GAP = 160;
         const BIRD_X = 60;
 
         // Game state
@@ -131,41 +131,45 @@
 
         function createPipe() {
             const minH = 60;
-            const maxH = canvas.height - PIPE_GAP - minH - 60;
+            const maxH = canvas.height - PIPE_GAP - minH - 80;
             const topHeight = Math.floor(Math.random() * (maxH - minH + 1)) + minH;
-            pipes.push({ x: canvas.width, topHeight, width: 70, passed: false });
+            pipes.push({ x: canvas.width, topHeight, width: 75, passed: false });
         }
 
         function drawBackground() {
-            // 8-bit clouds
+            // 8-bit Static Clouds
             ctx.fillStyle = "#fff";
-            const clouds = [[50, 80], [200, 150], [320, 50]];
+            const clouds = [[40, 60], [220, 140], [300, 40]];
             clouds.forEach(c => {
-                ctx.fillRect(c[0], c[1], 40, 20);
-                ctx.fillRect(c[0] + 10, c[1] - 10, 20, 10);
+                ctx.fillRect(c[0], c[1], 45, 18);
+                ctx.fillRect(c[0] + 10, c[1] - 10, 25, 10);
             });
 
             // 8-bit Ground
             const groundHeight = 60;
-            ctx.fillStyle = "#ded895";
+            ctx.fillStyle = "#ded895"; // Sand
             ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
             
-            ctx.fillStyle = "#9ece6a";
+            ctx.fillStyle = "#9ece6a"; // Grass layer
             ctx.fillRect(0, canvas.height - groundHeight, canvas.width, 15);
             
+            // Decorative ground line
             ctx.strokeStyle = "#000";
             ctx.lineWidth = 4;
-            ctx.strokeRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height - groundHeight);
+            ctx.lineTo(canvas.width, canvas.height - groundHeight);
+            ctx.stroke();
         }
 
         function drawBird() {
             ctx.save();
             ctx.translate(bird.x, bird.y);
-            // Tilt the bird based on its velocity
-            bird.rotation = Math.min(Math.PI / 6, Math.max(-Math.PI / 8, bird.velocity * 0.1));
+            // Dynamic rotation for more "life"
+            bird.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 8, bird.velocity * 0.08));
             ctx.rotate(bird.rotation);
             
-            // Draw the uploaded bird image (2321.png)
+            // Draw angy.png
             ctx.drawImage(birdImg, -bird.width/2, -bird.height/2, bird.width, bird.height);
             
             ctx.restore();
@@ -174,27 +178,31 @@
         function drawPipes() {
             pipes.forEach(pipe => {
                 const pipeGreen = "#73bf2e";
+                const pipeHighlight = "rgba(255,255,255,0.4)";
                 
-                const drawSegment = (x, y, w, h) => {
+                const drawSegment = (x, y, w, h, isCap = false) => {
                     ctx.fillStyle = pipeGreen;
                     ctx.fillRect(x, y, w, h);
                     ctx.strokeStyle = "#000";
                     ctx.lineWidth = 4;
                     ctx.strokeRect(x, y, w, h);
-                    // 8-bit highlight
-                    ctx.fillStyle = "rgba(255,255,255,0.3)";
-                    ctx.fillRect(x + 5, y, 8, h);
+                    
+                    // 8-bit shiny highlights
+                    ctx.fillStyle = pipeHighlight;
+                    ctx.fillRect(x + 8, y, 6, h);
                 };
 
                 // Top Pipe
                 drawSegment(pipe.x, 0, pipe.width, pipe.topHeight);
-                drawSegment(pipe.x - 5, pipe.topHeight - 30, pipe.width + 10, 30);
+                // Top Cap
+                drawSegment(pipe.x - 6, pipe.topHeight - 35, pipe.width + 12, 35);
 
                 // Bottom Pipe
                 const bottomY = pipe.topHeight + PIPE_GAP;
                 const bottomHeight = canvas.height - bottomY - 60;
                 drawSegment(pipe.x, bottomY, pipe.width, bottomHeight);
-                drawSegment(pipe.x - 5, bottomY, pipe.width + 10, 30);
+                // Bottom Cap
+                drawSegment(pipe.x - 6, bottomY, pipe.width + 12, 35);
             });
         }
 
@@ -204,8 +212,8 @@
             bird.velocity += GRAVITY;
             bird.y += bird.velocity;
 
-            // Ground collision
-            if (bird.y + bird.height/2 > canvas.height - 60) {
+            // Collision check with floor/ceiling
+            if (bird.y + bird.height/2 > canvas.height - 60 || bird.y - bird.height/2 < 0) {
                 endGame();
             }
 
@@ -215,11 +223,12 @@
                 const p = pipes[i];
                 p.x -= PIPE_SPEED;
 
-                // Hitbox detection
-                const bLeft = bird.x - 15;
-                const bRight = bird.x + 15;
-                const bTop = bird.y - 15;
-                const bBottom = bird.y + 15;
+                // Tighter hitbox for pixel art
+                const bPadding = 10;
+                const bLeft = bird.x - bird.width/2 + bPadding;
+                const bRight = bird.x + bird.width/2 - bPadding;
+                const bTop = bird.y - bird.height/2 + bPadding;
+                const bBottom = bird.y + bird.height/2 - bPadding;
 
                 if (bRight > p.x && bLeft < p.x + p.width) {
                     if (bTop < p.topHeight || bBottom > p.topHeight + PIPE_GAP) {
@@ -233,13 +242,13 @@
                     scoreDisplay.innerText = score;
                 }
 
-                if (p.x + p.width < -20) pipes.splice(i, 1);
+                if (p.x + p.width < -30) pipes.splice(i, 1);
             }
             frameCount++;
         }
 
         function draw() {
-            ctx.fillStyle = "#5c94fc";
+            ctx.fillStyle = "#5c94fc"; // Clear blue sky
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             drawBackground();
@@ -276,8 +285,8 @@
             startGame();
         }
 
+        // Initial setup
         birdImg.onload = () => { if (!gameRunning) draw(); };
     </script>
 </body>
 </html>
-
